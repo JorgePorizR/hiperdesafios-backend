@@ -11,19 +11,7 @@ exports.listaUsuarios = async (req, res) => {
     const usuarios = await db.usuarios.findAll({
       where: {
         es_admin: false,
-      },
-      include: [
-        {
-          model: db.billeteras,
-          as: "billeteras",
-          include: [
-            {
-              model: db.movimientos,
-              as: "movimientos",
-            },
-          ],
-        },
-      ],
+      }
     });
     res.send(usuarios);
   } catch (error) {
@@ -58,19 +46,7 @@ exports.getUsuario = async (req, res) => {
     const usuario = await db.usuarios.findByPk(id, {
       where: {
         es_admin: false,
-      },
-      include: [
-        {
-          model: db.billeteras,
-          as: "billeteras",
-          include: [
-            {
-              model: db.movimientos,
-              as: "movimientos",
-            },
-          ],
-        },
-      ],
+      }
     });
     if (!usuario) {
       res.status(404).send({ message: "Usuario no encontrado" });
