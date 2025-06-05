@@ -4,7 +4,6 @@ const { checkRequiredFields, sendError500 } = require("../utils/request.utils");
 exports.listaInsignias = async (req, res) => {
   try {
     const insignias = await db.insignias.findAll({
-      attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad"],
       order: [["id", "ASC"]],
     });
     res.status(200).send(insignias);

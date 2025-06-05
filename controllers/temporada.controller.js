@@ -11,7 +11,7 @@ exports.listaTemporadas = async (req, res) => {
   } catch (error) {
     sendError500(res, error);
   }
-}
+};
 
 exports.getTemporadaById = async (req, res) => {
   try {
@@ -26,16 +26,20 @@ exports.getTemporadaById = async (req, res) => {
   } catch (error) {
     sendError500(res, error);
   }
-}
+};
 
 exports.createTemporada = async (req, res) => {
   try {
     const { nombre } = req.body;
     const requiredFields = ["nombre"];
     const missingFields = checkRequiredFields(requiredFields, req.body);
-    
+
     if (missingFields.length > 0) {
-      return res.status(400).send({ message: `Faltan los siguientes campos: ${missingFields.join(", ")}` });
+      return res
+        .status(400)
+        .send({
+          message: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
+        });
     }
 
     const nuevaTemporada = await db.temporadas.create({
@@ -49,7 +53,7 @@ exports.createTemporada = async (req, res) => {
   } catch (error) {
     sendError500(res, error);
   }
-}
+};
 
 exports.updateTemporada = async (req, res) => {
   const { id } = req.params;
@@ -59,13 +63,19 @@ exports.updateTemporada = async (req, res) => {
       return res.status(404).send({ message: "Temporada no encontrada" });
     }
 
-    if (req.method === "PUT"){
+    if (req.method === "PUT") {
       const { nombre, fecha_inicio, fecha_fin, estado } = req.body;
       const requiredFields = ["nombre", "fecha_inicio", "fecha_fin", "estado"];
       const missingFields = checkRequiredFields(req.body, requiredFields);
-      
+
       if (missingFields.length > 0) {
-        return res.status(400).send({ message: `Faltan los siguientes campos: ${missingFields.join(", ")}` });
+        return res
+          .status(400)
+          .send({
+            message: `Faltan los siguientes campos: ${missingFields.join(
+              ", "
+            )}`,
+          });
       }
 
       temporada.nombre = nombre;
@@ -82,7 +92,7 @@ exports.updateTemporada = async (req, res) => {
   } catch (error) {
     sendError500(res, error);
   }
-}
+};
 
 exports.deleteTemporada = async (req, res) => {
   const { id } = req.params;
@@ -91,15 +101,20 @@ exports.deleteTemporada = async (req, res) => {
     if (!temporada) {
       return res.status(404).send({ message: "Temporada no encontrada" });
     }
-    
+
     await temporada.destroy();
     res.status(200).send({ message: "Temporada eliminada correctamente" });
   } catch (error) {
     sendError500(res, error);
   }
-}
+};
 
 exports.activateTemporada = async (req, res) => {
+  console.log("Activando temporada");
+  if (!res.locals.user.es_admin) {
+    res.status(403).send({ message: "No tienes permisos para realizar esto" });
+    return;
+  }
   const { id } = req.params;
   try {
     const temporada = await db.temporadas.findByPk(id);
@@ -109,7 +124,7 @@ exports.activateTemporada = async (req, res) => {
 
     // Desactivar todas las temporadas activas
     await db.temporadas.update(
-      { estado: "TERMINADA" },
+      { estado: "TERMINADA", fecha_fin: new Date() },
       { where: { estado: "ACTIVA" } }
     );
 
@@ -124,4 +139,4 @@ exports.activateTemporada = async (req, res) => {
   } catch (error) {
     sendError500(res, error);
   }
-}
+};

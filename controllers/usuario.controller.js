@@ -10,7 +10,7 @@ exports.listaUsuarios = async (req, res) => {
   try {
     const usuarios = await db.usuarios.findAll({
       where: {
-        es_admin: false,
+        //es_admin: false,
       }
     });
     res.send(usuarios);
@@ -117,7 +117,7 @@ exports.updateUsuario = async (req, res) => {
       return;
     }
     if (req.method === "PUT") {
-      const requiredFields = ["nombre", "apellido", "email"];
+      const requiredFields = ["nombre", "apellido", "email", "es_admin"];
       const fieldsWithErrors = checkRequiredFields(requiredFields, req.body);
       if (fieldsWithErrors.length > 0) {
         res.status(400).send({
@@ -128,7 +128,6 @@ exports.updateUsuario = async (req, res) => {
         return;
       }
       req.body.password = usuario.password;
-      req.body.es_admin = usuario.es_admin;
     }
     await usuario.update(req.body);
     res.send(usuario);
