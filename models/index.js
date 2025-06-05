@@ -21,7 +21,7 @@ db.tokens = require("./usuarioauth.model")(sequelize, Sequelize);
 db.productos = require("./producto.model")(sequelize, Sequelize);
 db.temporadas = require("./temporada.model")(sequelize, Sequelize);
 db.desafios = require("./desafio.model")(sequelize, Sequelize);
-db.progresos_desafio = require("./progreso_desafio.model")(sequelize, Sequelize);
+//db.progresos_desafio = require("./progreso_desafio.model")(sequelize, Sequelize);
 db.rankings = require("./ranking.model")(sequelize, Sequelize);
 db.insignias = require("./insignia.model")(sequelize, Sequelize);
 db.insignias_usuario = require("./insignia_usuario.model")(sequelize, Sequelize);
@@ -43,16 +43,16 @@ db.desafios.belongsTo(db.temporadas, {
 });
 
 // Relaciones Usuario - ProgresoDesafio - Desafío
-db.usuarios.hasMany(db.progresos_desafio, { as: "progresos", foreignKey: "usuario_id", onDelete: "CASCADE" });
-db.desafios.hasMany(db.progresos_desafio, { as: "progresos", foreignKey: "desafio_id", onDelete: "CASCADE" });
-db.progresos_desafio.belongsTo(db.usuarios, {
-    foreignKey: "usuario_id",
-    as: "usuario",
-});
-db.progresos_desafio.belongsTo(db.desafios, {
-    foreignKey: "desafio_id",
-    as: "desafio",
-});
+// db.usuarios.hasMany(db.progresos_desafio, { as: "progresos", foreignKey: "usuario_id", onDelete: "CASCADE" });
+// db.desafios.hasMany(db.progresos_desafio, { as: "progresos", foreignKey: "desafio_id", onDelete: "CASCADE" });
+// db.progresos_desafio.belongsTo(db.usuarios, {
+//     foreignKey: "usuario_id",
+//     as: "usuario",
+// });
+// db.progresos_desafio.belongsTo(db.desafios, {
+//     foreignKey: "desafio_id",
+//     as: "desafio",
+// });
 
 // Relaciones Usuario - Insignia (a través de InsigniaUsuario)
 db.usuarios.belongsToMany(db.insignias, { 
