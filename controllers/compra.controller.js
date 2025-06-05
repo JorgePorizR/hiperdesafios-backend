@@ -1,123 +1,117 @@
 const db = require("../models");
-const Compra = db.compra;
-const Op = db.Sequelize.Op;
+const { checkRequiredFields, sendError500 } = require("../utils/request.utils");
 
-// Create and Save a new Compra
-exports.create = (req, res) => {
-  // Validate request
-  if (!req.body.usuario_id || !req.body.monto_total) {
-    res.status(400).send({
-      message: "Content can not be empty! Usuario ID and Monto Total are required!"
+exports.listaComprasByUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const compras = await db.compras.findAll({
+      where: {
+        usuario_id: id,
+      },
+      include: [
+        {
+          model: db.productos,
+          as: 'productos',
+        },
+        {
+          model: db.detalles_compra,
+          as: 'detalles',
+        },
+      ],
     });
-    return;
+    res.status(200).json(compras);
+  } catch (error) {
+    sendError500(res, error);
   }
+}
 
-  // Create a Compra
-  const compra = {
-    usuario_id: req.body.usuario_id,
-    fecha_compra: req.body.fecha_compra || new Date(),
-    monto_total: req.body.monto_total,
-    puntos_ganados: req.body.puntos_ganados || 0,
-    sucursal: req.body.sucursal
-  };
-
-  // Save Compra in the database
-  Compra.create(compra)
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while creating the Compra."
-      });
+exports.getCompraById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const compra = await db.compras.findOne({
+      where: {
+        id: id,
+      },
+      include: [
+        {
+          model: db.productos,
+          as: 'productos',
+        },
+        {
+          model: db.detalles_compra,
+          as: 'detalles',
+        },
+      ],
     });
-};
+    if (!compra) {
+      return res.status(404).json({ message: "Compra no encontrada" });
+    }
+    res.status(200).json(compra);
+  } catch (error) {
+    sendError500(res, error);
+  }
+}
 
-// Retrieve all Compras from the database
-exports.findAll = (req, res) => {
-  const usuario_id = req.query.usuario_id;
-  var condition = usuario_id ? { usuario_id: { [Op.eq]: usuario_id } } : null;
+exports.createCompra = async (req, res) => {
+  try {
+    const { usuario_id, productos } = req.body;
+    const requiredFields = ["usuario_id", "productos"];
+    const missingFields = checkRequiredFields(requiredFields, req.body);
+    if (missingFields.length > 0) {
+      return res.status(400).send({ message: `Faltan los siguientes campos: ${missingFields.join(", ")}` });
+    }
 
-  Compra.findAll({ where: condition })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving compras."
-      });
+    const sucursales = ['Sucursal A', 'Sucursal B', 'Sucursal C', 'Sucursal D', 'Sucursal E'];
+    const sucursalAleatoria = sucursales[Math.floor(Math.random() * sucursales.length)];
+    const usuario = await db.usuarios.findByPk(usuario_id);
+    if (!usuario) {
+      return res.status(404).send({ message: "Usuario no encontrado" });
+    }
+
+    const compra = await db.compras.create({
+      usuario_id: usuario_id,
+      fecha_compra: new Date(),
+      monto_total: productos.reduce((total, producto) => total + (producto.cantidad * producto.precio_unitario), 0),
+      puntos_ganados: productos.reduce((total, producto) => total + producto.precio_unitario, 0),
+      sucursal: sucursalAleatoria,
     });
-};
 
-// Find a single Compra with an id
-exports.findOne = (req, res) => {
-  const id = req.params.id;
-
-  Compra.findByPk(id)
-    .then(data => {
-      if (data) {
-        res.send(data);
-      } else {
-        res.status(404).send({
-          message: `Cannot find Compra with id=${id}.`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error retrieving Compra with id=" + id
+    // Asociar productos a la compra
+    for (const producto of productos) {
+      await db.detalles_compra.create({
+        compra_id: compra.id,
+        producto_id: producto.id,
+        cantidad: producto.cantidad,
+        precio_unitario: producto.precio_unitario,
+        subtotal: producto.cantidad * producto.precio_unitario,
       });
+    }
+
+    res.status(201).send(compra);
+  } catch (error) {
+    sendError500(res, error);
+  }
+}
+
+exports.deleteCompra = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const compra = await db.compras.findByPk(id);
+    if (!compra) {
+      return res.status(404).send({ message: "Compra no encontrada" });
+    }
+    await db.detalles_compra.destroy({
+      where: {
+        compra_id: id,
+      },
     });
-};
-
-// Update a Compra by the id
-exports.update = (req, res) => {
-  const id = req.params.id;
-
-  Compra.update(req.body, {
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Compra was updated successfully."
-        });
-      } else {
-        res.send({
-          message: `Cannot update Compra with id=${id}. Maybe Compra was not found or req.body is empty!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error updating Compra with id=" + id
-      });
+    await db.compras.destroy({
+      where: {
+        id: id,
+      },
     });
-};
-
-// Delete a Compra with the specified id
-exports.delete = (req, res) => {
-  const id = req.params.id;
-
-  Compra.destroy({
-    where: { id: id }
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Compra was deleted successfully!"
-        });
-      } else {
-        res.send({
-          message: `Cannot delete Compra with id=${id}. Maybe Compra was not found!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Could not delete Compra with id=" + id
-      });
-    });
-}; 
+    res.status(204).send({ message: "Compra eliminada exitosamente" });
+  } catch (error) {
+    sendError500(res, error);
+  }
+}

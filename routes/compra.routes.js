@@ -1,20 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const compraController = require('../controllers/compra.controller');
+const { checkUserMiddleware } = require('../middlewares/check-user.middleware.js');
 
-// Create a new Compra
-router.post('/', compraController.create);
+module.exports = (app) => {
+  const controller = require('../controllers/compra.controller.js');
+  let router = require('express').Router();
 
-// Retrieve all Compras
-router.get('/', compraController.findAll);
+  router.get('/usuario/:id', checkUserMiddleware, controller.listaComprasByUsuario);
+  router.get('/:id', checkUserMiddleware, controller.getCompraById);
+  router.post('/', checkUserMiddleware, controller.createCompra);
+  router.delete('/:id', checkUserMiddleware, controller.deleteCompra);
 
-// Retrieve a single Compra with id
-router.get('/:id', compraController.findOne);
-
-// Update a Compra with id
-router.put('/:id', compraController.update);
-
-// Delete a Compra with id
-router.delete('/:id', compraController.delete);
-
-module.exports = router; 
+  app.use('/api/compras', router);
+}

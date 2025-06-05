@@ -11,8 +11,7 @@ module.exports = (app) => {
   router.post('/', checkUserMiddleware, controller.createProducto);
   router.put('/:id', checkUserMiddleware, controller.updateProducto);
   router.patch('/:id', checkUserMiddleware, controller.updateProducto);
-  router.post('/:id/desactivar', checkUserMiddleware, controller.desactivarProducto);
-  router.post('/:id/activar', checkUserMiddleware, controller.activarProducto);
+  router.delete('/:id', checkUserMiddleware, controller.deleteProducto);
   router.post('/:id/imagen', checkUserMiddleware, controller.uploadImage);
 
   app.use('/api/productos', router);

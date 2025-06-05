@@ -12,6 +12,9 @@ module.exports = (sequelize, Sequelize) => {
     requirimiento: {
       type: Sequelize.STRING,
     },
+    cantidad: {
+      type: Sequelize.INTEGER,
+    },
     imagenUrl: {
       type: Sequelize.VIRTUAL,
       get() {

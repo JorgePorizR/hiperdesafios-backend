@@ -120,7 +120,7 @@ exports.updateProducto = async (req, res) => {
   }
 }
 
-exports.desactivarProducto = async (req, res) => {
+exports.deleteProducto = async (req, res) => {
   const id = req.params.id;
   try {
     const producto = await db.productos.findByPk(id);
@@ -130,28 +130,9 @@ exports.desactivarProducto = async (req, res) => {
       });
       return;
     }
-    await producto.update({ estado: false });
+    await producto.destroy();
     res.status(204).send({
-      message: "Producto eliminado correctamente"
-    });
-  } catch (error) {
-    sendError500(res, error);
-  }
-}
-
-exports.activarProducto = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const producto = await db.productos.findByPk(id);
-    if (!producto) {
-      res.status(404).send({
-        message: "Producto no encontrado",
-      });
-      return;
-    }
-    await producto.update({ estado: true });
-    res.status(204).send({
-      message: "Producto activado correctamente"
+      message: "Producto eliminado correctamente",
     });
   } catch (error) {
     sendError500(res, error);
