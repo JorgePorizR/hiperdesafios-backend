@@ -4,6 +4,9 @@ const { checkRequiredFields, sendError500 } = require("../utils/request.utils");
 exports.listaDesafios = async (req, res) => {
   try {
     const desafios = await db.desafios.findAll({
+      where: {
+        estado: true,
+      },
       include: [
         {
           model: db.temporadas,

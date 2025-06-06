@@ -1,5 +1,8 @@
 module.exports = (sequelize, Sequelize) => {
   const InsigniaUsuario = sequelize.define("insignia_usuario", {
+    fecha_obtencion: {
+      type: Sequelize.DATE,
+    },
     usuario_id: {
       type: Sequelize.INTEGER,
     },
@@ -8,9 +11,6 @@ module.exports = (sequelize, Sequelize) => {
     },
     temporada_id: {
       type: Sequelize.INTEGER,
-    },
-    fecha_obtencion: {
-      type: Sequelize.DATE,
     },
   });
   return InsigniaUsuario;
