@@ -35,11 +35,9 @@ exports.createTemporada = async (req, res) => {
     const missingFields = checkRequiredFields(requiredFields, req.body);
 
     if (missingFields.length > 0) {
-      return res
-        .status(400)
-        .send({
-          message: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
-        });
+      return res.status(400).send({
+        message: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
+      });
     }
 
     const nuevaTemporada = await db.temporadas.create({
@@ -69,13 +67,9 @@ exports.updateTemporada = async (req, res) => {
       const missingFields = checkRequiredFields(req.body, requiredFields);
 
       if (missingFields.length > 0) {
-        return res
-          .status(400)
-          .send({
-            message: `Faltan los siguientes campos: ${missingFields.join(
-              ", "
-            )}`,
-          });
+        return res.status(400).send({
+          message: `Faltan los siguientes campos: ${missingFields.join(", ")}`,
+        });
       }
 
       temporada.nombre = nombre;
@@ -130,70 +124,72 @@ exports.activateTemporada = async (req, res) => {
       return res.status(400).send({ message: "La temporada ya está activa" });
     }
 
-    // Desactivar todos los desafíos de la temporada
-    await db.desafios.update(
-      { estado: false },
-      { where: { temporada_id: temporadaActivaAnterior.id } }
-    );
+    if (temporadaActivaAnterior) {
+      // Desactivar todos los desafíos de la temporada
+      await db.desafios.update(
+        { estado: false },
+        { where: { temporada_id: temporadaActivaAnterior.id } }
+      );
 
-    // entregar insignias a los usuarios de la temporada
-    const insigniasTemporada = await db.insignias.findAll({
-      where: { estado: true },
-    });
+      // entregar insignias a los usuarios de la temporada
+      const insigniasTemporada = await db.insignias.findAll({
+        where: { estado: true },
+      });
 
-    for (const insignia of insigniasTemporada) {
-      switch (insignia.requirimiento) {
-        case "primero":
-          const primerUsuarioRanking = await db.rankings.findOne({
-            where: { temporada_id: temporadaActivaAnterior.id, posicion: 1 },
-            attributes: ["usuario_id"],
-          });
-          if (primerUsuarioRanking) {
-            await db.insignias_usuario.create({
-              usuario_id: primerUsuarioRanking.usuario_id,
-              insignia_id: insignia.id,
-              fecha_obtencion: new Date(),
-              temporada_id: temporadaActivaAnterior.id,
+      for (const insignia of insigniasTemporada) {
+        switch (insignia.requirimiento) {
+          case "primero":
+            const primerUsuarioRanking = await db.rankings.findOne({
+              where: { temporada_id: temporadaActivaAnterior.id, posicion: 1 },
+              attributes: ["usuario_id"],
             });
-          }
-          break;
-        case "segundo":
-          const segundoUsuarioRanking = await db.rankings.findOne({
-            where: { temporada_id: temporadaActivaAnterior.id, posicion: 2 },
-            attributes: ["usuario_id"],
-          });
-          if (segundoUsuarioRanking) {
-            await db.insignias_usuario.create({
-              usuario_id: segundoUsuarioRanking.usuario_id,
-              insignia_id: insignia.id,
-              fecha_obtencion: new Date(),
-              temporada_id: temporadaActivaAnterior.id,
+            if (primerUsuarioRanking) {
+              await db.insignias_usuario.create({
+                usuario_id: primerUsuarioRanking.usuario_id,
+                insignia_id: insignia.id,
+                fecha_obtencion: new Date(),
+                temporada_id: temporadaActivaAnterior.id,
+              });
+            }
+            break;
+          case "segundo":
+            const segundoUsuarioRanking = await db.rankings.findOne({
+              where: { temporada_id: temporadaActivaAnterior.id, posicion: 2 },
+              attributes: ["usuario_id"],
             });
-          }
-          break;
-        case "tercero":
-          const terceroUsuarioRanking = await db.rankings.findOne({
-            where: { temporada_id: temporadaActivaAnterior.id, posicion: 3 },
-            attributes: ["usuario_id"],
-          });
-          if (terceroUsuarioRanking) {
-            await db.insignias_usuario.create({
-              usuario_id: terceroUsuarioRanking.usuario_id,
-              insignia_id: insignia.id,
-              fecha_obtencion: new Date(),
-              temporada_id: temporadaActivaAnterior.id,
+            if (segundoUsuarioRanking) {
+              await db.insignias_usuario.create({
+                usuario_id: segundoUsuarioRanking.usuario_id,
+                insignia_id: insignia.id,
+                fecha_obtencion: new Date(),
+                temporada_id: temporadaActivaAnterior.id,
+              });
+            }
+            break;
+          case "tercero":
+            const terceroUsuarioRanking = await db.rankings.findOne({
+              where: { temporada_id: temporadaActivaAnterior.id, posicion: 3 },
+              attributes: ["usuario_id"],
             });
-          }
-          break;
-        default:
-          break;
+            if (terceroUsuarioRanking) {
+              await db.insignias_usuario.create({
+                usuario_id: terceroUsuarioRanking.usuario_id,
+                insignia_id: insignia.id,
+                fecha_obtencion: new Date(),
+                temporada_id: temporadaActivaAnterior.id,
+              });
+            }
+            break;
+          default:
+            break;
+        }
       }
+      // Actualizar el estado de la temporada anterior a "TERMINADA"
+      await temporadaActivaAnterior.update({
+        estado: "TERMINADA",
+        fecha_fin: new Date(),
+      });
     }
-    // Actualizar el estado de la temporada anterior a "TERMINADA"
-    await temporadaActivaAnterior.update({
-      estado: "TERMINADA",
-      fecha_fin: new Date(),
-    });
 
     // Activar la temporada seleccionada
     temporada.estado = "ACTIVA";

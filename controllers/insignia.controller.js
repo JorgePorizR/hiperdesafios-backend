@@ -15,21 +15,23 @@ exports.listaInsignias = async (req, res) => {
 exports.listaInsigniasByUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const insignias = await db.insignias_usuario.findAll({
-      where: { usuario_id: id },
+    const insignias = await db.insignias.findAll({
       include: [
         {
-          model: db.insignias,
-          as: "insignia",
-          attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad"],
-        },
-        {
-          model: db.temporadas,
-          as: "temporada",
-          attributes: ["id", "nombre"],
+          model: db.usuarios,
+          as: "usuarios",
+          where: { id },
+          attributes: ["id", "nombre", "email"],
         },
       ],
+      attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad", "imagenUrl"],
+      order: [["id", "ASC"]],
     });
+    
+    if (!insignias || insignias.length === 0) {
+      return res.status(404).send({ message: "No se encontraron insignias para este usuario" });
+    }
+
     res.status(200).send(insignias);
   } catch (error) {
     sendError500(res, error);
