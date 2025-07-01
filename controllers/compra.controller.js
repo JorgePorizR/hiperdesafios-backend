@@ -5,21 +5,31 @@ exports.listaComprasByUsuario = async (req, res) => {
   try {
     const { id } = req.params;
     const compras = await db.compras.findAll({
-      where: {
-        usuario_id: id,
-      },
+      where: { usuario_id: id },
       include: [
-        {
-          model: db.productos,
-          as: "productos",
-        },
         {
           model: db.detalles_compra,
           as: "detalles",
+          include: [
+            {
+              model: db.productos,
+              as: "producto",
+              attributes: ["id", "nombre", "precio"],
+            },
+          ],
         },
       ],
+      order: [["fecha_compra", "DESC"]],
     });
-    res.status(200).send(compras);
+    // Formatear la respuesta
+    const comprasFormateadas = compras.map(compra => ({
+      ...compra.toJSON(),
+      detalles: compra.detalles.map(detalle => ({
+        ...detalle.toJSON(),
+        producto: detalle.producto ? detalle.producto.toJSON() : null,
+      })),
+    }));
+    res.status(200).send(comprasFormateadas);
   } catch (error) {
     sendError500(res, error);
   }

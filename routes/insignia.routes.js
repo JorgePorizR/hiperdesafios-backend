@@ -11,6 +11,10 @@ module.exports = (app) => {
   router.put('/:id', checkUserMiddleware, controller.updateInsignia);
   router.delete('/:id', checkUserMiddleware, controller.deleteInsignia);
   router.post('/:id/imagen', checkUserMiddleware, controller.uploadImage);
+  
+  // Nuevas rutas para gestión de insignias de usuarios
+  router.post('/asignar', checkUserMiddleware, controller.asignarInsignia);
+  router.delete('/usuario/:id', checkUserMiddleware, controller.removerInsignia);
 
   app.use('/api/insignias', router);
 }

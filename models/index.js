@@ -25,6 +25,8 @@ db.desafios = require("./desafio.model")(sequelize, Sequelize);
 db.rankings = require("./ranking.model")(sequelize, Sequelize);
 db.insignias = require("./insignia.model")(sequelize, Sequelize);
 db.insignias_usuario = require("./insignia_usuario.model")(sequelize, Sequelize);
+db.premios = require("./premio.model")(sequelize, Sequelize);
+db.premios_usuario = require("./premio_usuario.model")(sequelize, Sequelize);
 db.compras = require("./compra.model")(sequelize, Sequelize);
 db.detalles_compra = require("./detalle_compra.model")(sequelize, Sequelize);
 
@@ -68,8 +70,14 @@ db.insignias.belongsToMany(db.usuarios, {
     as: "usuarios"
 });
 
+// Relaciones directas con InsigniaUsuario
+db.usuarios.hasMany(db.insignias_usuario, { as: "insignias_obtenidas", foreignKey: "usuario_id", onDelete: "CASCADE" });
+db.insignias.hasMany(db.insignias_usuario, { as: "usuarios_obtuvieron", foreignKey: "insignia_id", onDelete: "CASCADE" });
+db.insignias_usuario.belongsTo(db.usuarios, { foreignKey: "usuario_id", as: "usuario" });
+db.insignias_usuario.belongsTo(db.insignias, { foreignKey: "insignia_id", as: "insignia" });
+
 // Relaciones InsigniaUsuario con Temporada
-db.temporadas.hasMany(db.insignias_usuario, { as: "insignias_obtenidas", foreignKey: "temporada_id", onDelete: "CASCADE" });
+db.temporadas.hasMany(db.insignias_usuario, { as: "insignias_usuarios", foreignKey: "temporada_id", onDelete: "CASCADE" });
 db.insignias_usuario.belongsTo(db.temporadas, {
     foreignKey: "temporada_id",
     as: "temporada",
@@ -105,5 +113,25 @@ db.rankings.belongsTo(db.temporadas, {
     foreignKey: "temporada_id",
     as: "temporada",
 });
+
+// Relaciones Usuario - Premio (a través de PremioUsuario)
+db.usuarios.belongsToMany(db.premios, { 
+    through: db.premios_usuario,
+    foreignKey: "usuario_id",
+    otherKey: "premio_id",
+    as: "premios"
+});
+db.premios.belongsToMany(db.usuarios, { 
+    through: db.premios_usuario,
+    foreignKey: "premio_id",
+    otherKey: "usuario_id",
+    as: "usuarios"
+});
+
+// Relaciones directas con PremioUsuario
+db.usuarios.hasMany(db.premios_usuario, { as: "premios_obtenidos", foreignKey: "usuario_id", onDelete: "CASCADE" });
+db.premios.hasMany(db.premios_usuario, { as: "usuarios_obtuvieron", foreignKey: "premio_id", onDelete: "CASCADE" });
+db.premios_usuario.belongsTo(db.usuarios, { foreignKey: "usuario_id", as: "usuario" });
+db.premios_usuario.belongsTo(db.premios, { foreignKey: "premio_id", as: "premio" });
 
 module.exports = db;

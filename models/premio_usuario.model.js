@@ -1,25 +1,30 @@
 module.exports = (sequelize, Sequelize) => {
-  const InsigniaUsuario = sequelize.define("insignia_usuario", {
+  const PremioUsuario = sequelize.define("premio_usuario", {
     id: {
       type: Sequelize.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
+    fecha_expiracion: {
+      type: Sequelize.DATE,
+      allowNull: false,
+    },
+    usado: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: false,
+    },
     fecha_obtencion: {
       type: Sequelize.DATE,
+      defaultValue: Sequelize.NOW,
     },
     usuario_id: {
       type: Sequelize.INTEGER,
       allowNull: false,
     },
-    insignia_id: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-    },
-    temporada_id: {
+    premio_id: {
       type: Sequelize.INTEGER,
       allowNull: false,
     },
   });
-  return InsigniaUsuario;
-};
+  return PremioUsuario;
+}; 

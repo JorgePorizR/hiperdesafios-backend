@@ -9,11 +9,9 @@ exports.listaUsuarios = async (req, res) => {
   }
   try {
     const usuarios = await db.usuarios.findAll({
-      where: {
-        //es_admin: false,
-      }
+      order: [["id", "ASC"]],
     });
-    res.send(usuarios);
+    res.status(200).send(usuarios);
   } catch (error) {
     sendError500(res, error);
   }
@@ -113,8 +111,7 @@ exports.updateUsuario = async (req, res) => {
   try {
     const usuario = await db.usuarios.findByPk(id);
     if (!usuario) {
-      res.status(404).send({ message: "Usuario no encontrado" });
-      return;
+      return res.status(404).send({ message: "Usuario no encontrado" });
     }
     if (req.method === "PUT") {
       const requiredFields = ["nombre", "apellido", "email", "es_admin"];
@@ -145,11 +142,10 @@ exports.deleteUsuario = async (req, res) => {
   try {
     const usuario = await db.usuarios.findByPk(id);
     if (!usuario) {
-      res.status(404).send({ message: "Usuario no encontrado" });
-      return;
+      return res.status(404).send({ message: "Usuario no encontrado" });
     }
     await usuario.destroy();
-    res.send({ message: "Usuario eliminado correctamente" });
+    res.status(200).send({ message: "Usuario eliminado correctamente" });
   } catch (error) {
     sendError500(res, error);
   }

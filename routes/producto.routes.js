@@ -6,7 +6,7 @@ module.exports = (app) => {
 
   router.get('/', controller.listaProductos);
   router.get('/destacados', controller.listaProductosDestacados);
-  router.get('/categoria/:categoria', controller.listaProductosPorCategoria);
+  router.get('/categoria/:categoria', controller.listaProductosByCategoria);
   router.get('/:id', controller.getProductoById);
   router.post('/', checkUserMiddleware, controller.createProducto);
   router.put('/:id', checkUserMiddleware, controller.updateProducto);

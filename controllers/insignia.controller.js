@@ -15,24 +15,40 @@ exports.listaInsignias = async (req, res) => {
 exports.listaInsigniasByUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const insignias = await db.insignias.findAll({
+    
+    // Usar la relación directa para obtener información completa
+    const insigniasUsuario = await db.insignias_usuario.findAll({
+      where: { usuario_id: id },
       include: [
         {
-          model: db.usuarios,
-          as: "usuarios",
-          where: { id },
-          attributes: ["id", "nombre", "email"],
+          model: db.insignias,
+          as: "insignia",
+          attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad", "imagenUrl"],
         },
+        {
+          model: db.temporadas,
+          as: "temporada",
+          attributes: ["id", "nombre", "estado"],
+        }
       ],
-      attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad", "imagenUrl"],
-      order: [["id", "ASC"]],
+      attributes: ["id", "fecha_obtencion"],
+      order: [["fecha_obtencion", "DESC"]],
     });
     
-    if (!insignias || insignias.length === 0) {
-      return res.status(404).send({ message: "No se encontraron insignias para este usuario" });
+    if (!insigniasUsuario || insigniasUsuario.length === 0) {
+      res.status(200).send([]);
+      return;
     }
 
-    res.status(200).send(insignias);
+    // Formatear la respuesta usando map (funcional)
+    const insigniasFormateadas = insigniasUsuario.map(item => ({
+      ...item.insignia.toJSON(),
+      fecha_obtencion: item.fecha_obtencion,
+      temporada: item.temporada,
+      insignia_usuario_id: item.id
+    }));
+
+    res.status(200).send(insigniasFormateadas);
   } catch (error) {
     sendError500(res, error);
   }
@@ -42,7 +58,7 @@ exports.getInsigniaById = async (req, res) => {
   try {
     const { id } = req.params;
     const insignia = await db.insignias.findByPk(id, {
-      attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad"],
+      attributes: ["id", "nombre", "descripcion", "estado", "requirimiento", "cantidad", "imagenUrl"],
     });
     if (!insignia) {
       return res.status(404).send({ message: "Insignia no encontrada" });
@@ -118,6 +134,80 @@ exports.deleteInsignia = async (req, res) => {
     }
     await insignia.destroy();
     res.status(200).send({ message: "Insignia eliminada correctamente" });
+  } catch (error) {
+    sendError500(res, error);
+  }
+}
+
+exports.asignarInsignia = async (req, res) => {
+  try {
+    const { usuario_id, insignia_id, temporada_id } = req.body;
+    const requiredFields = ["usuario_id", "insignia_id", "temporada_id"];
+    const missingFields = checkRequiredFields(requiredFields, req.body);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).send({ message: `Faltan campos requeridos: ${missingFields.join(", ")}` });
+    }
+
+    // Verificar que el usuario existe
+    const usuario = await db.usuarios.findByPk(usuario_id);
+    if (!usuario) {
+      return res.status(404).send({ message: "Usuario no encontrado" });
+    }
+
+    // Verificar que la insignia existe
+    const insignia = await db.insignias.findByPk(insignia_id);
+    if (!insignia) {
+      return res.status(404).send({ message: "Insignia no encontrada" });
+    }
+
+    // Verificar que la temporada existe
+    const temporada = await db.temporadas.findByPk(temporada_id);
+    if (!temporada) {
+      return res.status(404).send({ message: "Temporada no encontrada" });
+    }
+
+    // Verificar si ya tiene esta insignia en esta temporada
+    const insigniaExistente = await db.insignias_usuario.findOne({
+      where: {
+        usuario_id,
+        insignia_id,
+        temporada_id
+      }
+    });
+
+    if (insigniaExistente) {
+      return res.status(400).send({ message: "El usuario ya tiene esta insignia en esta temporada" });
+    }
+
+    // Asignar la insignia
+    const insigniaUsuario = await db.insignias_usuario.create({
+      usuario_id,
+      insignia_id,
+      temporada_id,
+      fecha_obtencion: new Date()
+    });
+
+    res.status(201).send({
+      message: "Insignia asignada correctamente",
+      insignia_usuario: insigniaUsuario
+    });
+  } catch (error) {
+    sendError500(res, error);
+  }
+}
+
+exports.removerInsignia = async (req, res) => {
+  try {
+    const { id } = req.params; // ID de la relación insignia_usuario
+    
+    const insigniaUsuario = await db.insignias_usuario.findByPk(id);
+    if (!insigniaUsuario) {
+      return res.status(404).send({ message: "Relación insignia-usuario no encontrada" });
+    }
+
+    await insigniaUsuario.destroy();
+    res.status(200).send({ message: "Insignia removida correctamente" });
   } catch (error) {
     sendError500(res, error);
   }

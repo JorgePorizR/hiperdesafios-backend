@@ -105,86 +105,58 @@ exports.deleteTemporada = async (req, res) => {
 
 exports.activateTemporada = async (req, res) => {
   if (!res.locals.user.es_admin) {
-    res.status(403).send({ message: "No tienes permisos para realizar esto" });
-    return;
+    return res.status(403).send({ message: "No tienes permisos para realizar esto" });
   }
   const { id } = req.params;
   try {
     const temporada = await db.temporadas.findByPk(id);
-    if (!temporada) {
-      return res.status(404).send({ message: "Temporada no encontrada" });
-    }
+    if (!temporada) return res.status(404).send({ message: "Temporada no encontrada" });
 
-    const temporadaActivaAnterior = await db.temporadas.findOne({
-      where: { estado: "ACTIVA" },
-    });
-
-    // Verificar que la temporada no esté ya activa
+    const temporadaActivaAnterior = await db.temporadas.findOne({ where: { estado: "ACTIVA" } });
     if (temporada.estado === "ACTIVA") {
       return res.status(400).send({ message: "La temporada ya está activa" });
     }
 
+    // Función pura para obtener usuario según requerimiento
+    const getUsuarioPorRequerimiento = async (requerimiento, temporadaId) => {
+      const posiciones = { primero: 1, segundo: 2, tercero: 3 };
+      if (!posiciones[requerimiento]) return null;
+      return db.rankings.findOne({
+        where: { temporada_id: temporadaId, posicion: posiciones[requerimiento] },
+        attributes: ["usuario_id"],
+      });
+    };
+
+    // Desactivar desafíos y entregar insignias si hay temporada activa anterior
     if (temporadaActivaAnterior) {
-      // Desactivar todos los desafíos de la temporada
       await db.desafios.update(
         { estado: false },
         { where: { temporada_id: temporadaActivaAnterior.id } }
       );
 
-      // entregar insignias a los usuarios de la temporada
-      const insigniasTemporada = await db.insignias.findAll({
-        where: { estado: true },
-      });
+      // Obtener insignias activas
+      const insigniasTemporada = await db.insignias.findAll({ where: { estado: true } });
 
-      for (const insignia of insigniasTemporada) {
-        switch (insignia.requirimiento) {
-          case "primero":
-            const primerUsuarioRanking = await db.rankings.findOne({
-              where: { temporada_id: temporadaActivaAnterior.id, posicion: 1 },
-              attributes: ["usuario_id"],
+      // Filtrar insignias con requerimiento válido
+      const insigniasValidas = insigniasTemporada.filter(insignia =>
+        ["primero", "segundo", "tercero"].includes(insignia.requirimiento)
+      );
+
+      // Entregar insignias
+      await Promise.all(
+        insigniasValidas.map(async insignia => {
+          const usuarioRanking = await getUsuarioPorRequerimiento(insignia.requirimiento, temporadaActivaAnterior.id);
+          if (usuarioRanking) {
+            await db.insignias_usuario.create({
+              usuario_id: usuarioRanking.usuario_id,
+              insignia_id: insignia.id,
+              fecha_obtencion: new Date(),
+              temporada_id: temporadaActivaAnterior.id,
             });
-            if (primerUsuarioRanking) {
-              await db.insignias_usuario.create({
-                usuario_id: primerUsuarioRanking.usuario_id,
-                insignia_id: insignia.id,
-                fecha_obtencion: new Date(),
-                temporada_id: temporadaActivaAnterior.id,
-              });
-            }
-            break;
-          case "segundo":
-            const segundoUsuarioRanking = await db.rankings.findOne({
-              where: { temporada_id: temporadaActivaAnterior.id, posicion: 2 },
-              attributes: ["usuario_id"],
-            });
-            if (segundoUsuarioRanking) {
-              await db.insignias_usuario.create({
-                usuario_id: segundoUsuarioRanking.usuario_id,
-                insignia_id: insignia.id,
-                fecha_obtencion: new Date(),
-                temporada_id: temporadaActivaAnterior.id,
-              });
-            }
-            break;
-          case "tercero":
-            const terceroUsuarioRanking = await db.rankings.findOne({
-              where: { temporada_id: temporadaActivaAnterior.id, posicion: 3 },
-              attributes: ["usuario_id"],
-            });
-            if (terceroUsuarioRanking) {
-              await db.insignias_usuario.create({
-                usuario_id: terceroUsuarioRanking.usuario_id,
-                insignia_id: insignia.id,
-                fecha_obtencion: new Date(),
-                temporada_id: temporadaActivaAnterior.id,
-              });
-            }
-            break;
-          default:
-            break;
-        }
-      }
-      // Actualizar el estado de la temporada anterior a "TERMINADA"
+          }
+        })
+      );
+
       await temporadaActivaAnterior.update({
         estado: "TERMINADA",
         fecha_fin: new Date(),

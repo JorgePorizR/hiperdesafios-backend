@@ -4,6 +4,7 @@ module.exports = app => {
     require("./compra.routes")(app);
     require("./desafio.routes")(app);
     require("./insignia.routes")(app);
+    require("./premio.routes")(app);
     require("./producto.routes")(app);
     require("./ranking.routes")(app);
     require("./temporada.routes")(app);
