@@ -157,6 +157,50 @@ exports.activateTemporada = async (req, res) => {
         })
       );
 
+      // --- ENTREGA DE PREMIOS TOP 3 ---
+      const premiosNombres = ["primero", "segundo", "tercero"];
+      // Buscar todos los premios necesarios de una vez
+      const premios = await db.premios.findAll({
+        where: { nombre: premiosNombres },
+      });
+      // Mapear nombre -> premio
+      const premiosMap = premios.reduce((acc, premio) => {
+        acc[premio.nombre] = premio;
+        return acc;
+      }, {});
+      // Para cada puesto, buscar usuario y asignar premio si corresponde
+      await Promise.all(
+        premiosNombres.map(async (nombre, idx) => {
+          const puesto = idx + 1;
+          const usuarioRanking = await db.rankings.findOne({
+            where: { temporada_id: temporadaActivaAnterior.id, posicion: puesto },
+            attributes: ["usuario_id"],
+          });
+          const premio = premiosMap[nombre];
+          if (usuarioRanking && premio) {
+            // Verificar si ya tiene el premio activo
+            const yaTiene = await db.premios_usuario.findOne({
+              where: {
+                usuario_id: usuarioRanking.usuario_id,
+                premio_id: premio.id,
+                usado: false,
+                fecha_expiracion: { [db.Sequelize.Op.gt]: new Date() },
+              },
+            });
+            if (!yaTiene) {
+              await db.premios_usuario.create({
+                usuario_id: usuarioRanking.usuario_id,
+                premio_id: premio.id,
+                fecha_expiracion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
+                usado: false,
+                fecha_obtencion: new Date(),
+              });
+            }
+          }
+        })
+      );
+      // --- FIN ENTREGA DE PREMIOS ---
+
       await temporadaActivaAnterior.update({
         estado: "TERMINADA",
         fecha_fin: new Date(),
