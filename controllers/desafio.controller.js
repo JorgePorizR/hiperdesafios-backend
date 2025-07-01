@@ -4,9 +4,6 @@ const { checkRequiredFields, sendError500 } = require("../utils/request.utils");
 exports.listaDesafios = async (req, res) => {
   try {
     const desafios = await db.desafios.findAll({
-      where: {
-        estado: true,
-      },
       include: [
         {
           model: db.temporadas,
@@ -155,6 +152,28 @@ exports.desactivarDesafio = async (req, res) => {
 
     res.status(200).send({
       message: "Desafío desactivado correctamente",
+      desafio,
+    });
+  } catch (error) {
+    sendError500(res, error);
+  }
+};
+
+exports.activarDesafio = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const desafio = await db.desafios.findByPk(id);
+    if (!desafio) {
+      return res.status(404).send({ message: "Desafío no encontrado" });
+    }
+
+    // Activar el desafío
+    desafio.estado = true;
+    desafio.fecha_inicio = new Date();
+    await desafio.save();
+
+    res.status(200).send({
+      message: "Desafío activado correctamente",
       desafio,
     });
   } catch (error) {

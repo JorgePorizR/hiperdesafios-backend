@@ -35,16 +35,12 @@ exports.listaUsuariosAdmin = async (req, res) => {
 };
 
 exports.getUsuario = async (req, res) => {
-  if (!res.locals.user.es_admin) {
-    res.status(403).send({ message: "No tienes permisos para realizar esto" });
-    return;
-  }
   const id = req.params.id;
   try {
     const usuario = await db.usuarios.findByPk(id, {
-      where: {
-        es_admin: false,
-      }
+      attributes: {
+        exclude: ["password", "es_admin"],
+      },
     });
     if (!usuario) {
       res.status(404).send({ message: "Usuario no encontrado" });

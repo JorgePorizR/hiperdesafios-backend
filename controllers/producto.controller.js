@@ -103,7 +103,21 @@ exports.updateProducto = async (req, res) => {
       if (missingFields.length > 0) {
         return res.status(400).send({ message: `Faltan campos requeridos: ${missingFields.join(", ")}` });
       }
-      req.body.estado = true;
+      // Asignar todos los campos obligatorios
+      producto.nombre = req.body.nombre;
+      producto.categoria = req.body.categoria;
+      producto.precio = req.body.precio;
+      producto.es_destacado = req.body.es_destacado;
+      producto.stock = req.body.stock;
+      producto.punto_extra = req.body.punto_extra;
+      producto.estado = true;
+    } else if (req.method === "PATCH") {
+      // Solo actualizar los campos enviados en req.body
+      ["nombre", "categoria", "precio", "es_destacado", "stock", "punto_extra", "estado"].forEach((campo) => {
+        if (req.body[campo] !== undefined) {
+          producto[campo] = req.body[campo];
+        }
+      });
     }
     await producto.save();
     res.status(200).send({

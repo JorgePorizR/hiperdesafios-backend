@@ -147,12 +147,22 @@ exports.activateTemporada = async (req, res) => {
         insigniasValidas.map(async insignia => {
           const usuarioRanking = await getUsuarioPorRequerimiento(insignia.requirimiento, temporadaActivaAnterior.id);
           if (usuarioRanking) {
-            await db.insignias_usuario.create({
-              usuario_id: usuarioRanking.usuario_id,
-              insignia_id: insignia.id,
-              fecha_obtencion: new Date(),
-              temporada_id: temporadaActivaAnterior.id,
+            // Verificar si ya existe la relación para esa temporada
+            const yaTiene = await db.insignias_usuario.findOne({
+              where: {
+                usuario_id: usuarioRanking.usuario_id,
+                insignia_id: insignia.id,
+                temporada_id: temporadaActivaAnterior.id,
+              },
             });
+            if (!yaTiene) {
+              await db.insignias_usuario.create({
+                usuario_id: usuarioRanking.usuario_id,
+                insignia_id: insignia.id,
+                fecha_obtencion: new Date(),
+                temporada_id: temporadaActivaAnterior.id,
+              });
+            }
           }
         })
       );

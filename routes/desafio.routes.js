@@ -12,6 +12,7 @@ module.exports = (app) => {
   router.patch('/:id', checkUserMiddleware, controller.updateDesafio);
   router.delete('/:id', checkUserMiddleware, controller.deleteDesafio);
   router.post('/:id/desactivar', checkUserMiddleware, controller.desactivarDesafio);
+  router.post('/:id/activar', checkUserMiddleware, controller.activarDesafio);
 
   app.use('/api/desafios', router);
 }

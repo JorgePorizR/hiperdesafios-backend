@@ -20,6 +20,14 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.INTEGER,
       allowNull: false,
     },
+  },
+  {
+    indexes: [
+      {
+        unique: true,
+        fields: ['usuario_id', 'insignia_id', 'temporada_id']
+      }
+    ]
   });
   return InsigniaUsuario;
 };
